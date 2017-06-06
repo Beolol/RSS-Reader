@@ -7,7 +7,7 @@
 //
 
 #import "AppDelegate.h"
-
+#import "RRDataManager.h"
 
 @interface AppDelegate ()
 
@@ -19,6 +19,12 @@
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
     [application setStatusBarStyle:UIStatusBarStyleLightContent];
+    
+    [[RRDataManager sharedManager] deleteAllObjects];
+    
+    [[RRDataManager sharedManager] generateAndAddresourceIfNeeded];
+    
+    [[RRDataManager sharedManager] printResources];
     
     return YES;
 }
@@ -43,6 +49,7 @@
 
 - (void)applicationWillTerminate:(UIApplication *)application {
     // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
+    [[RRDataManager sharedManager] saveContext];
 }
 
 

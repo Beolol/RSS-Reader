@@ -8,22 +8,24 @@
 
 #import <Foundation/Foundation.h>
 
-@class RRNewsData;
+@class RRNews;
 
-extern NSString* const RRDataManagerDidUpdateNewsNotification;
-extern NSString* const RRDataManagerNewsUserInfoKey;
-
+typedef void (^RRNewsBlock)(void);
 
 @interface RRNewsManager : NSObject
 
-@property (nonatomic) NSMutableArray<NSString *> *newsTabArray;
-@property (nonatomic) NSMutableArray<NSString *> *newsLinkArray;
+@property (nonatomic) NSMutableArray *newsResourceArray;
+@property (nonatomic, copy) void(^updateBlock)(void);
 
 + (RRNewsManager*)sharedManager;
-- (NSArray<RRNewsData *> *)getNewsWithTag:(NSString *)tag;
+
++ (NSString *)formattedDateStringWithDate:(NSDate *)date;
+
+- (NSArray<RRNews *> *)getNewsArrayWithTag:(NSString *)tag updateNewsBlock:(RRNewsBlock)updateBlock;
 - (void)updateNewsWithTag:(NSString *)tag;
+- (void)addResourceWithTag:(NSString *)tag link:(NSString *)link;
 - (void)moveTagAtIndex:(NSUInteger)sourceIndex toIndex:(NSUInteger)destinationIndex;
 - (void)deleteResourceAtIndex:(NSUInteger)index;
-
+- (NSString *)tagWithIndex:(NSUInteger)index;
 
 @end

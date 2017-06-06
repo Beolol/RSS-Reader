@@ -8,19 +8,15 @@
 
 #import "RRNewsManager.h"
 #import "RRXMLParser.h"
-#import "RRNewsData.h"
-
-NSString* const RRDataManagerDidUpdateNewsNotification = @"RRDataManagerDidUpdateNewsNotification";
-NSString* const RRDataManagerNewsUserInfoKey = @"RRDataManagerNewsUserInfoKey";
-
+#import "RRDataManager.h"
+#import "RRResource+CoreDataClass.h"
+#import "RRNews+CoreDataClass.h"
 
 @interface RRNewsManager () <RRXMLParserDelegate>
-
 
 @property (nonatomic) NSMutableDictionary *newsDictionary;
 
 @property (nonatomic) RRXMLParser *xmlParser;
-
 
 @end
 
@@ -36,15 +32,7 @@ NSString* const RRDataManagerNewsUserInfoKey = @"RRDataManagerNewsUserInfoKey";
     
     if (self)
     {
-        _newsTabArray = [@[ @"В мире", @"Россия", @"Культура",
-                               @"Ценности", @"Rambler"
-                               ] mutableCopy];
-        _newsLinkArray = [@[ @"https://lenta.ru/rss/news/world",
-                                @"https://lenta.ru/rss/news/russia",
-                                @"https://lenta.ru/rss/news/culture",
-                                @"https://lenta.ru/rss/news/style",
-                                @"https://news.rambler.ru/rss/head/"
-                                ] mutableCopy];
+        _newsResourceArray = [[[RRDataManager sharedManager] resultArrayResources] copy];
         _xmlParser = [[RRXMLParser alloc] init];
         _xmlParser.delegate = self;
         
@@ -68,82 +56,114 @@ NSString* const RRDataManagerNewsUserInfoKey = @"RRDataManagerNewsUserInfoKey";
     return manager;
 }
 
++ (NSString *)formattedDateStringWithDate:(NSDate *)date
+{
+    static NSDateFormatter *dateFormatter = nil;
+    static dispatch_once_t onceToken;
+    
+    dispatch_once(&onceToken, ^{
+        dateFormatter = [[NSDateFormatter alloc] init];
+        dateFormatter.locale = [[NSLocale alloc] initWithLocaleIdentifier:@"ru_RU"];
+        dateFormatter.dateFormat = @"dd MMMM yyyy' г.' HH:mm";
+    });
+    
+    return [dateFormatter stringFromDate:date];
+}
+
 
 #pragma mark - RRNewsManager Methods
 
-- (NSArray<RRNewsData *> *)getNewsWithTag:(NSString *)tag
+- (NSArray<RRNews *> *)getNewsArrayWithTag:(NSString *)tag updateNewsBlock:(RRNewsBlock)updateBlock
 {
-    NSArray<RRNewsData *> *newsArray = self.newsDictionary[tag];
-    if (!newsArray)
-    {
-        NSInteger tagIndex = [self.newsTabArray indexOfObject:tag];
-        [self.xmlParser parseXMLWithURLString:self.newsLinkArray[tagIndex]];
+    NSMutableArray<RRNews *> *newsArray = [NSMutableArray array];
+    
+    for (RRResource *resource in self.newsResourceArray) {
+        if ([resource.tag isEqualToString:tag]) {
+            newsArray = [[[RRDataManager sharedManager] newsArrayWithResource:resource] copy];
+        }
     }
+    
+    if (newsArray.count == 0)
+    {
+        NSString *link = [self linkStringWithTag:tag];
+        self.updateBlock = updateBlock;
+
+        [self.xmlParser parseXMLWithURLString:link];
+    }
+    
     return newsArray;
 }
 
+- (NSString *)linkStringWithTag:(NSString *)tag
+{
+    NSString* link = nil;
+    
+    for (RRResource *resource in self.newsResourceArray) {
+        if ([resource.tag isEqualToString:tag]) {
+            link = resource.link;
+        }
+    }
+    
+    return link;
+}
 
 - (void)updateNewsWithTag:(NSString *)tag
 {
-    NSInteger tagIndex = [self.newsTabArray indexOfObject:tag];
-    [self.xmlParser parseXMLWithURLString:self.newsLinkArray[tagIndex]];
+    NSString *link = [self linkStringWithTag:tag];
+    
+    [self.xmlParser parseXMLWithURLString:link];
 }
 
 
-- (NSString *)tagWithURLString:(NSString *)urlString
+- (NSString *)tagWithIndex:(NSUInteger)index
 {
-    NSInteger tagIndex = [self.newsLinkArray indexOfObject:urlString];
-    return self.newsTabArray[tagIndex];
+    NSString* tag = nil;
+    
+    for (RRResource *resource in self.newsResourceArray) {
+        if (resource.number == (int32_t)index) {
+            tag = resource.tag;
+        }
+    }
+    
+    return tag;
 }
 
-
-- (void)sendNotificationWithDictionary:(NSDictionary *)dict
-{
-    NSDictionary* dictionary = @{RRDataManagerNewsUserInfoKey : dict};
-    [[NSNotificationCenter defaultCenter] postNotificationName:RRDataManagerDidUpdateNewsNotification object:self userInfo:dictionary];
-}
 
 - (void)moveTagAtIndex:(NSUInteger)sourceIndex toIndex:(NSUInteger)destinationIndex
 {
-    [self.newsTabArray exchangeObjectAtIndex:sourceIndex withObjectAtIndex:destinationIndex];
-    [self.newsLinkArray exchangeObjectAtIndex:sourceIndex withObjectAtIndex:destinationIndex];
+    [[RRDataManager sharedManager] moveTagAtIndex:sourceIndex toIndex:destinationIndex];
+    self.newsResourceArray = [[[RRDataManager sharedManager] resultArrayResources] copy];
 }
 
 - (void)deleteResourceAtIndex:(NSUInteger)index
 {
-    [self.newsTabArray  removeObjectAtIndex:index];
-    [self.newsLinkArray removeObjectAtIndex:index];
+    [[RRDataManager sharedManager] deleteResourceAtIndex:index];
+    self.newsResourceArray = [[[RRDataManager sharedManager] resultArrayResources] copy];
+}
+
+- (void)addResourceWithTag:(NSString *)tag link:(NSString *)link
+{
+    [[RRDataManager sharedManager] addResourceWithTag:tag link:link number:self.newsResourceArray.count];
+    self.newsResourceArray = [[[RRDataManager sharedManager] resultArrayResources] copy];
 }
 
 #pragma mark - RRXMLParserDelegate
 
 - (void)parser:(RRXMLParser *)parser didFinishWithResult:(NSArray<NSDictionary *> *)resultArray urlString:(NSString *)urlString
 {
-    NSMutableArray *newsArray = [NSMutableArray array];
-    NSLog(@"%@", resultArray);
+    RRResource *currentResource = nil;
     
-    if (resultArray.count >= 10)
-    {
-        for (int i = 0; i < 10; i++)
-        {
-            NSDictionary *dict = resultArray[i];
-            
-            RRNewsData *news = [[RRNewsData alloc] init];
-            news.imageURLString = dict[RRXMLParserImageURLString];
-            news.pubDate = dict[RRXMLParserPubDateString];
-            news.header = dict[RRXMLParserHeader];
-            news.text = dict[RRXMLParserDescription];
-            news.link = dict[RRXMLParserLink];
-            
-            [newsArray addObject:news];
+    for (RRResource *resource in self.newsResourceArray) {
+        if ([resource.link isEqualToString:urlString]) {
+            currentResource = resource;
+            break;
         }
     }
     
-    NSString *tag = [self tagWithURLString:urlString];
-    
-    self.newsDictionary[tag] = [newsArray copy];
-    
-    [self sendNotificationWithDictionary:@{tag : [newsArray copy]}];
+    if ([[RRDataManager sharedManager] addNewsWithResult:resultArray resource:currentResource]) {
+        self.newsResourceArray = [[[RRDataManager sharedManager] resultArrayResources] copy];
+        self.updateBlock();
+    }
 }
 
 

@@ -40,7 +40,7 @@ static NSString *currentURLString;
     
     if (self)
     {
-        _queueXML = dispatch_queue_create("com.horis.rssreaderxmlparser.queue", DISPATCH_QUEUE_SERIAL);
+        _queueXML = dispatch_queue_create("com.rssreaderxmlparser.queue", DISPATCH_QUEUE_SERIAL);
     }
     
     return self;

@@ -11,6 +11,7 @@
 #import "RRNewsViewController.h"
 #import "RRAddResourceViewController.h"
 #import "RRNewsManager.h"
+#import "RRResource+CoreDataClass.h"
 
 @interface RRResourceDirectoryViewController () <UITableViewDelegate, UITableViewDataSource, RRAddResourceDelegate>
 @property (weak, nonatomic) IBOutlet UITableView *resourceTableView;
@@ -30,26 +31,23 @@
     self.resourceTableView.contentInset = UIEdgeInsetsMake(8, 0, 0, 0);
 }
 
-- (void)didReceiveMemoryWarning {
-    [super didReceiveMemoryWarning];
-    // Dispose of any resources that can be recreated.
-}
 
 #pragma mark - UITableViewDataSource
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-    return [RRNewsManager sharedManager].newsTabArray.count + 1;
+    return [RRNewsManager sharedManager].newsResourceArray.count + 1;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath;
 {
-    if (indexPath.row < [RRNewsManager sharedManager].newsTabArray.count) {
+    if (indexPath.row < [RRNewsManager sharedManager].newsResourceArray.count) {
 
     RRResourceTableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"RRResourceCell" forIndexPath:indexPath];
     
-    cell.tagLabel.text = [RRNewsManager sharedManager].newsTabArray[indexPath.row];
-    cell.tagLinkLabel.text = [RRNewsManager sharedManager].newsLinkArray[indexPath.row];
+    RRResource* resource = (RRResource *)[RRNewsManager sharedManager].newsResourceArray[indexPath.row];
+    cell.tagLabel.text = resource.tag;
+    cell.tagLinkLabel.text = resource.link;
     
     return cell;
         
@@ -67,7 +65,7 @@
 
 - (BOOL)tableView:(UITableView *)tableView canMoveRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    BOOL canMove = indexPath.row != [RRNewsManager sharedManager].newsTabArray.count;
+    BOOL canMove = indexPath.row != [RRNewsManager sharedManager].newsResourceArray.count;
     return canMove;
 }
 
@@ -85,7 +83,7 @@
 
 - (NSIndexPath *)tableView:(UITableView *)tableView targetIndexPathForMoveFromRowAtIndexPath:(NSIndexPath *)sourceIndexPath toProposedIndexPath:(NSIndexPath *)proposedDestinationIndexPath
 {
-    if (proposedDestinationIndexPath.row == [RRNewsManager sharedManager].newsTabArray.count || proposedDestinationIndexPath.row == sourceIndexPath.row) {
+    if (proposedDestinationIndexPath.row == [RRNewsManager sharedManager].newsResourceArray.count || proposedDestinationIndexPath.row == sourceIndexPath.row) {
         return sourceIndexPath;
     }
     return proposedDestinationIndexPath;
@@ -94,7 +92,7 @@
 
 - (UITableViewCellEditingStyle)tableView:(UITableView *)tableView editingStyleForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    return indexPath.row == [RRNewsManager sharedManager].newsTabArray.count ? UITableViewCellEditingStyleNone : UITableViewCellEditingStyleDelete;
+    return indexPath.row == [RRNewsManager sharedManager].newsResourceArray.count ? UITableViewCellEditingStyleNone : UITableViewCellEditingStyleDelete;
 }
 
 
@@ -105,7 +103,7 @@
 
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    return indexPath.row == [RRNewsManager sharedManager].newsTabArray.count ? 50.0 : 79.0;
+    return indexPath.row == [RRNewsManager sharedManager].newsResourceArray.count ? 50.0 : 79.0;
 }
 
 
@@ -128,7 +126,7 @@
 
 - (void)addResourceInsertNewObject:(RRAddResourceViewController *)resource
 {
-    NSUInteger row = [RRNewsManager sharedManager].newsTabArray.count-1;
+    NSUInteger row = [RRNewsManager sharedManager].newsResourceArray.count-1;
     NSIndexPath *indexPath = [NSIndexPath indexPathForRow:row inSection:0];
     [self.resourceTableView insertRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
 }

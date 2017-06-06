@@ -26,28 +26,17 @@
     }
     
     if (!self.indexPath) {
-        [[RRNewsManager sharedManager].newsTabArray addObject:self.tagResourceTextField.text];
-        [[RRNewsManager sharedManager].newsLinkArray addObject:self.linkResourceTextField.text];
+        [[RRNewsManager sharedManager] addResourceWithTag:self.tagResourceTextField.text link:self.linkResourceTextField.text];
         [self.delegate addResourceInsertNewObject:self];
     }
     else
     {
-        [RRNewsManager sharedManager].newsTabArray[self.indexPath.row] = self.tagResourceTextField.text;
-        [RRNewsManager sharedManager].newsLinkArray[self.indexPath.row] = self.linkResourceTextField.text;
+        //@TODO edit resource
         [self.delegate addResource:self editResourceAtIndexPath:self.indexPath];
     }
     
     [self.navigationController popViewControllerAnimated:YES];
 }
 
-/*
-#pragma mark - Navigation
-
-// In a storyboard-based application, you will often want to do a little preparation before navigation
-- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
-    // Get the new view controller using [segue destinationViewController].
-    // Pass the selected object to the new view controller.
-}
-*/
 
 @end

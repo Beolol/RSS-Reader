@@ -7,7 +7,8 @@
 //
 
 #import "RRDescriptionNewsViewController.h"
-#import "RRNewsData.h"
+#import "RRNews+CoreDataClass.h"
+#import "RRNewsManager.h"
 
 
 const NSInteger RRIndent = 8;
@@ -39,7 +40,7 @@ const NSInteger RRIndent = 8;
 {
     [super viewDidLoad];
     
-    self.newsDateLabel.text = self.newsData.pubDate;
+    self.newsDateLabel.text = [RRNewsManager formattedDateStringWithDate:self.newsData.pubDate];
     self.newsHeaderTextView.text = self.newsData.header;
     self.newsTextView.text = self.newsData.text;
     self.newsLinkTextView.text = self.newsData.link;
@@ -48,11 +49,11 @@ const NSInteger RRIndent = 8;
     {
         self.newsImageView.image = self.newsImage;
     }
-    else if (self.newsData.imageURLString)
+    else if (self.newsData.imageURL)
     {
         __weak RRDescriptionNewsViewController *weakSelf = self;
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
-            NSData *imageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:weakSelf.newsData.imageURLString]];
+            NSData *imageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:weakSelf.newsData.imageURL]];
 
             dispatch_async(dispatch_get_main_queue(), ^{
                 weakSelf.newsImageView.image = [UIImage imageWithData:imageData];
@@ -75,15 +76,10 @@ const NSInteger RRIndent = 8;
 }
 
 
-- (void)dealloc
-{
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
-}
-
 
 #pragma mark - RRDescriptionNews Methods
 
-- (void)setNewsWithNewsData:(RRNewsData *) newsData
+- (void)setNewsWithNewsData:(RRNews *) newsData
 {
     self.newsData = newsData;
 }

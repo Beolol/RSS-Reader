@@ -8,11 +8,11 @@
 
 #import <UIKit/UIKit.h>
 
-@class RRNewsData;
+@class RRNews;
 
 @interface RRDescriptionNewsViewController : UIViewController
 
-@property (nonatomic) RRNewsData *newsData;
+@property (nonatomic) RRNews *newsData;
 @property (nonatomic) UIImage *newsImage;
 
 @end

@@ -11,9 +11,8 @@
 #import "RRNewsTableViewCell.h"
 #import "RRDescriptionNewsViewController.h"
 #import "RRNewsManager.h"
-#import "RRNewsData.h"
-#import "RRImageContainer.h"
-
+#import "RRNews+CoreDataClass.h"
+#import <SDWebImage/UIImageView+WebCache.h>
 
 static NSString *currentTag;
 
@@ -31,11 +30,7 @@ const CGFloat RRDefaultCellHightConst = 100.0;
 
 @property (nonatomic) UIRefreshControl *refreshControll;
 
-@property (nonatomic) NSMutableArray<RRNewsData *> *arrayNews;
-@property (nonatomic) NSMutableDictionary<NSString *, UIImage *> *imagesDictionary;
-
-@property (nonatomic) dispatch_queue_t queueNewsVC;
-
+@property (nonatomic) NSMutableArray<RRNews *> *arrayNews;
 
 @end
 
@@ -53,12 +48,9 @@ const CGFloat RRDefaultCellHightConst = 100.0;
     [self.refreshControll addTarget:self action:@selector(handleRefresh:) forControlEvents:UIControlEventValueChanged];
     [self.newsTableView addSubview:self.refreshControll];
     
-    self.queueNewsVC = dispatch_queue_create("com.horis.rssreadernewsvc.queue", DISPATCH_QUEUE_SERIAL);
-    
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(dataManagerDidUpdateNewsNotification:) name:RRDataManagerDidUpdateNewsNotification object:[RRNewsManager sharedManager]];
     
     [self showDownloadProcess:YES];
-    currentTag = [RRNewsManager sharedManager].newsTabArray[self.currentNewsTabIndex];
+    currentTag = [[RRNewsManager sharedManager] tagWithIndex:self.currentNewsTabIndex];
     [self updateContentFromXMLParserWithTag:currentTag];
     
     [self.newsTabsCollectionView selectItemAtIndexPath:[NSIndexPath indexPathForItem:self.currentNewsTabIndex inSection:0] animated:YES scrollPosition:UICollectionViewScrollPositionCenteredVertically];
@@ -72,23 +64,6 @@ const CGFloat RRDefaultCellHightConst = 100.0;
 {
     [super viewWillAppear:animated];
     [self scrollFromSelectedNewsTag];
-}
-
-
-- (void)dealloc
-{
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
-}
-
-
-#pragma mark - Redefined Methods
-
-- (NSMutableDictionary<NSString *, UIImage *> *)imagesDictionary
-{
-    if(!_imagesDictionary)
-        _imagesDictionary = [RRImageContainer sharedContainer].imagesDictionary;
-    
-    return _imagesDictionary;
 }
 
 
@@ -144,9 +119,15 @@ const CGFloat RRDefaultCellHightConst = 100.0;
 - (void)updateContentFromXMLParserWithTag:(NSString *)tag
 {
     [self showDownloadProcess:YES];
-    NSArray<RRNewsData *> *newsArray = [[RRNewsManager sharedManager] getNewsWithTag:tag];
     
-    if (newsArray)
+    __weak RRNewsViewController *weakSelf = self;
+    
+    NSArray<RRNews *> *newsArray = [[RRNewsManager sharedManager] getNewsArrayWithTag:tag updateNewsBlock:^{
+        [weakSelf updateContentFromXMLParserWithTag:currentTag];
+    }];
+    
+    
+    if (newsArray.count > 0)
     {
         self.arrayNews = [newsArray copy];
         [self showDownloadProcess:NO];
@@ -161,47 +142,11 @@ const CGFloat RRDefaultCellHightConst = 100.0;
 }
 
 
-- (BOOL)addImageWithData:(NSData *)imageData fromImageURL:(NSString *)imageURL
-{
-    BOOL imageAdded = NO;
-    
-    if (!self.imagesDictionary[imageURL])
-    {
-        self.imagesDictionary[imageURL] = [UIImage imageWithData:imageData];
-        imageAdded = YES;
-    }
-    
-    return imageAdded;
-}
-
-
-- (void)downloadImageWithImageURL:(NSString *)imageURL fromCellIndexPath:(NSIndexPath *)indexPath tag:(NSString *)tag
-{
-    __weak RRNewsViewController *weakSelf = self;
-    
-    dispatch_async(self.queueNewsVC, ^{
-        
-        NSData *imageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:imageURL]];
-        
-        if ([weakSelf addImageWithData:imageData fromImageURL:imageURL] )
-        {
-            dispatch_async(dispatch_get_main_queue(), ^{
-                
-                if ([weakSelf.newsTableView.indexPathsForVisibleRows containsObject:indexPath] && [tag isEqualToString:currentTag])
-                {
-                    [weakSelf.newsTableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
-                }
-            });
-        }
-    });
-}
-
-
 #pragma mark - UICollectionViewDataSource
 
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section
 {
-    return [RRNewsManager sharedManager].newsTabArray.count;
+    return [RRNewsManager sharedManager].newsResourceArray.count;
 }
 
 
@@ -210,7 +155,7 @@ const CGFloat RRDefaultCellHightConst = 100.0;
     UICollectionViewCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"RRNewsTagCell" forIndexPath:indexPath];
     
     RRNewsTabCollectionViewCell *newsCell = (RRNewsTabCollectionViewCell *)cell;
-    newsCell.newsTagLabel.text = [RRNewsManager sharedManager].newsTabArray[indexPath.row];
+    newsCell.newsTagLabel.text = [[RRNewsManager sharedManager] tagWithIndex:indexPath.row];
     
     return cell;
 }
@@ -244,20 +189,15 @@ const CGFloat RRDefaultCellHightConst = 100.0;
         return heightRow;
     }
     
-    NSString *imageURL = self.arrayNews[indexPath.row].imageURLString;
+    NSString *imageURL = self.arrayNews[indexPath.row].imageURL;
     
     if (imageURL)
     {
-        UIImage *image = self.imagesDictionary[imageURL];
-        
-        if (image)
-        {
-            CGSize imageSize = image.size;
-            CGFloat imageResolution = imageSize.height / imageSize.width;
-            CGFloat newHeight = (self.view.frame.size.width - 2 * RRIndentConst) * imageResolution;
-            heightRow = (newHeight > imageSize.height) ? imageSize.height : newHeight;
-            heightRow += RRIndentConst;
-        }
+        CGSize imageSize = CGSizeMake(420, 280);
+        CGFloat imageResolution = imageSize.height / imageSize.width;
+        CGFloat newHeight = (self.view.frame.size.width - 2 * RRIndentConst) * imageResolution;
+        heightRow = (newHeight > imageSize.height) ? imageSize.height : newHeight;
+        heightRow += RRIndentConst;
     }
     
     return heightRow;
@@ -281,29 +221,18 @@ const CGFloat RRDefaultCellHightConst = 100.0;
         return newsCell;
     }
     
-    RRNewsData *news = self.arrayNews[indexPath.row];
-    newsCell.newsDateLabel.text = news.pubDate;
+    RRNews *news = self.arrayNews[indexPath.row];
+    newsCell.newsDateLabel.text = [RRNewsManager formattedDateStringWithDate:news.pubDate];
     newsCell.newsHeaderLabel.text = news.header;
     
-    if (news.imageURLString)
+    if (news.imageURL)
     {
-        if (self.imagesDictionary[news.imageURLString])
-        {
-            newsCell.newsImageView.image = self.imagesDictionary[news.imageURLString];
-            [newsCell.activityIndicator stopAnimating];
-        }
-        else
-        {
-            newsCell.newsImageView.image = nil;
-            [newsCell.activityIndicator startAnimating];
-            
-            [self downloadImageWithImageURL:[news.imageURLString copy] fromCellIndexPath:indexPath tag:[currentTag copy]];
-        }
+        [newsCell.newsImageView sd_setImageWithURL:[NSURL URLWithString:news.imageURL]
+                                  placeholderImage:[UIImage imageNamed:@""]];
     }
     else
     {
         newsCell.newsImageView.image = nil;
-        [newsCell.activityIndicator stopAnimating];
     }
     
     return newsCell;
@@ -324,29 +253,15 @@ const CGFloat RRDefaultCellHightConst = 100.0;
         {
             descriptionNewsVC.newsData = self.arrayNews[indexPath.row];
             
-            NSString *imageURL = self.arrayNews[indexPath.row].imageURLString;
+            NSString *imageURL = self.arrayNews[indexPath.row].imageURL;
             
-            if (imageURL)
-                descriptionNewsVC.newsImage = self.imagesDictionary[imageURL];
+            if (imageURL && [sender isKindOfClass:RRNewsTableViewCell.class])
+            {
+                RRNewsTableViewCell *cell = (RRNewsTableViewCell *)sender;
+                descriptionNewsVC.newsImage = cell.newsImageView.image;
+            }
         }
     }
-}
-
-
-#pragma mark - RRDataManagerDidUpdateNewsNotification
-
-- (void)dataManagerDidUpdateNewsNotification:(NSNotification *)notification
-{
-    NSDictionary *dict =  notification.userInfo[RRDataManagerNewsUserInfoKey];
-    NSArray<RRNewsData *> *newsArray = dict[currentTag];
-    
-    if (newsArray)
-    {
-        self.arrayNews = [newsArray copy];
-        [self.newsTableView reloadData];
-    }
-    
-    [self showDownloadProcess:NO];
 }
 
 

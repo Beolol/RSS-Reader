@@ -16,7 +16,6 @@
 @property (weak, nonatomic) IBOutlet UILabel *newsHeaderLabel;
 @property (weak, nonatomic) IBOutlet UIImageView *newsImageView;
 @property (weak, nonatomic) IBOutlet UIImageView *gradientImageView;
-@property (weak, nonatomic) IBOutlet UIActivityIndicatorView *activityIndicator;
 
 
 @end
