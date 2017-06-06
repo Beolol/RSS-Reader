@@ -20,11 +20,8 @@
 {
     [application setStatusBarStyle:UIStatusBarStyleLightContent];
     
-    [[RRDataManager sharedManager] deleteAllObjects];
-    
     [[RRDataManager sharedManager] generateAndAddresourceIfNeeded];
     
-    [[RRDataManager sharedManager] printResources];
     
     return YES;
 }
