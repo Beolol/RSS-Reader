@@ -78,7 +78,7 @@ static NSString *currentURLString;
         
         dispatch_async(dispatch_get_main_queue(), ^{
             
-            if ([currentURLString isEqualToString:urlString] &&  weakSelf.xmlData.count != 0)
+            if ([currentURLString isEqualToString:urlString])
             {
                 if (weakSelf.delegate)
                     [weakSelf.delegate parser:weakSelf didFinishWithResult:weakSelf.xmlData urlString:urlString];

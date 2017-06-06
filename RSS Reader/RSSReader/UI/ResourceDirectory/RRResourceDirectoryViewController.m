@@ -103,7 +103,7 @@
 
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    return indexPath.row == [RRNewsManager sharedManager].newsResourceArray.count ? 50.0 : 79.0;
+    return indexPath.row == [RRNewsManager sharedManager].newsResourceArray.count ? 55.0 : 79.0;
 }
 
 

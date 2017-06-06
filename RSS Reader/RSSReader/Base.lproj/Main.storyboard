@@ -564,6 +564,7 @@
                         <outlet property="newsHeaderTextView" destination="QCS-5G-eP5" id="E2m-Bm-ahw"/>
                         <outlet property="newsImageHightConstraint" destination="YEV-IA-MsZ" id="x80-uc-g2a"/>
                         <outlet property="newsImageView" destination="VyE-IM-gsO" id="YbA-Ut-aEB"/>
+                        <outlet property="newsLinkHeightConstraint" destination="cBH-SN-Emo" id="1sH-V5-SSc"/>
                         <outlet property="newsLinkTextView" destination="b2Y-ge-Hja" id="TpI-4k-5Mo"/>
                         <outlet property="newsTextHeightConstraint" destination="JJM-E5-I8h" id="Hyv-Bc-ZbT"/>
                         <outlet property="newsTextView" destination="EQv-vE-FI3" id="Nuk-ue-CP9"/>

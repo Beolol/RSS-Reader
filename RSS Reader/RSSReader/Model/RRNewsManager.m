@@ -73,7 +73,7 @@
 
 #pragma mark - RRNewsManager Methods
 
-- (NSArray<RRNews *> *)getNewsArrayWithTag:(NSString *)tag updateNewsBlock:(RRNewsBlock)updateBlock
+- (NSArray<RRNews *> *)getNewsArrayWithTag:(NSString *)tag updateNewsBlock:(RRNewsBlock)updateBlock cancelBlock:(RRNewsBlock)cancelBlock
 {
     NSMutableArray<RRNews *> *newsArray = [NSMutableArray array];
     
@@ -82,6 +82,7 @@
             newsArray = [[[RRDataManager sharedManager] newsArrayWithResource:resource] copy];
         }
     }
+    self.cancelBlock = cancelBlock;
     
     if (newsArray.count == 0)
     {
@@ -163,6 +164,10 @@
     if ([[RRDataManager sharedManager] addNewsWithResult:resultArray resource:currentResource]) {
         self.newsResourceArray = [[[RRDataManager sharedManager] resultArrayResources] copy];
         self.updateBlock();
+    }
+    else
+    {
+        self.cancelBlock();
     }
 }
 

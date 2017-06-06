@@ -26,6 +26,7 @@ const NSInteger RRIndent = 8;
 @property (weak, nonatomic) IBOutlet NSLayoutConstraint *newsImageHightConstraint;
 @property (weak, nonatomic) IBOutlet NSLayoutConstraint *newsHeaderHightConstraint;
 @property (weak, nonatomic) IBOutlet NSLayoutConstraint *newsTextHeightConstraint;
+@property (weak, nonatomic) IBOutlet NSLayoutConstraint *newsLinkHeightConstraint;
 
 
 @end
@@ -126,6 +127,7 @@ const NSInteger RRIndent = 8;
     CGFloat newWidth = self.view.frame.size.width - 2 * RRIndent;
     self.newsHeaderHightConstraint.constant = ceilf([self.newsHeaderTextView sizeThatFits:CGSizeMake(newWidth, HUGE_VALF)].height);
     self.newsTextHeightConstraint.constant = ceilf([self.newsTextView sizeThatFits:CGSizeMake(newWidth, HUGE_VALF)].height);
+    self.newsLinkHeightConstraint.constant = ceilf([self.newsLinkTextView sizeThatFits:CGSizeMake(newWidth, HUGE_VALF)].height);
     
     [self.view layoutIfNeeded];
 }

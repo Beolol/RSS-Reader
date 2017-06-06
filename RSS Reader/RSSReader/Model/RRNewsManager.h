@@ -16,12 +16,13 @@ typedef void (^RRNewsBlock)(void);
 
 @property (nonatomic) NSMutableArray *newsResourceArray;
 @property (nonatomic, copy) void(^updateBlock)(void);
+@property (nonatomic, copy) void(^cancelBlock)(void);
 
 + (RRNewsManager*)sharedManager;
 
 + (NSString *)formattedDateStringWithDate:(NSDate *)date;
 
-- (NSArray<RRNews *> *)getNewsArrayWithTag:(NSString *)tag updateNewsBlock:(RRNewsBlock)updateBlock;
+- (NSArray<RRNews *> *)getNewsArrayWithTag:(NSString *)tag updateNewsBlock:(RRNewsBlock)updateBlock cancelBlock:(RRNewsBlock)cancelBlock;
 - (void)updateNewsWithTag:(NSString *)tag;
 - (void)addResourceWithTag:(NSString *)tag link:(NSString *)link;
 - (void)moveTagAtIndex:(NSUInteger)sourceIndex toIndex:(NSUInteger)destinationIndex;

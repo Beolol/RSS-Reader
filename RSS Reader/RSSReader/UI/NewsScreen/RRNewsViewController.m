@@ -124,8 +124,9 @@ const CGFloat RRDefaultCellHightConst = 100.0;
     
     NSArray<RRNews *> *newsArray = [[RRNewsManager sharedManager] getNewsArrayWithTag:tag updateNewsBlock:^{
         [weakSelf updateContentFromXMLParserWithTag:currentTag];
+    } cancelBlock:^{
+        [weakSelf showDownloadProcess:NO];
     }];
-    
     
     if (newsArray.count > 0)
     {
